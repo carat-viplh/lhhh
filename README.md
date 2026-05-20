@@ -68,7 +68,11 @@ npm start
 npm run login
 ```
 
-脚本会**依次打开**三个默认站点，请在浏览器中完成登录后回到终端按回车保存 Cookie。Cookie 保存在 `cookies/` 目录，后续批量任务自动加载。
+脚本会**依次打开**各核查网站。请在浏览器窗口完成登录后，回到**终端**按回车保存 Cookie（仅改地址栏不按回车不会保存）。
+
+操作提示：`回车` 保存 | `r` 重新打开当前站 | `s` 跳过 | `q` 结束
+
+若地址栏输入无效：先按 `r` 让脚本重新打开，或使用已更新的登录模式（独立 Chrome 配置目录，支持手动输入网址）。
 
 如需为**自定义网站**保存 Cookie，可先 `npm run login` 流程中访问该站，或登录后在该域名下手动触发一次任务（可在 `server/scraper.js` 中将 `saveCookieAfter` 设为 `true` 用于调试）。
 
@@ -148,12 +152,29 @@ search_screenshot/
 - 使用 `npm run login` 可视化登录
 - 执行时**关闭无头模式**，在浏览器中手动完成验证码后继续（适合少量任务）
 
-### 4. Chromium 下载失败
+### 4. 报错 Could not find Chrome
+
+任选一种方式：
+
+**方式 A（推荐）**：本机已安装 [Google Chrome](https://www.google.com/chrome/) 时，项目会自动使用系统 Chrome，直接重试：
 
 ```bash
-# 使用国内镜像（可选）
+npm run login
+```
+
+**方式 B**：安装 Puppeteer 自带的 Chrome：
+
+```bash
+npm run install:chrome
+# 或
+npx puppeteer browsers install chrome
+```
+
+**方式 C**：下载慢时使用国内镜像后再安装：
+
+```bash
 export PUPPETEER_DOWNLOAD_HOST=https://npmmirror.com/mirrors
-npm install
+npm run install:chrome
 ```
 
 ### 5. 修改端口

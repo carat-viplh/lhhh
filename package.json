@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
-    "login": "node server/login.js"
+    "login": "node server/login.js",
+    "install:chrome": "npx puppeteer browsers install chrome",
+    "postinstall": "npx puppeteer browsers install chrome || true"
   },
   "keywords": [
     "puppeteer",

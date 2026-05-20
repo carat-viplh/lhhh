@@ -1,10 +1,94 @@
 /**
  * Puppeteer 浏览器启动与页面工具
  */
+const fs = require('fs');
+const path = require('path');
 const puppeteer = require('puppeteer');
-const { NAVIGATION_TIMEOUT_MS } = require('./config');
+const { NAVIGATION_TIMEOUT_MS, ROOT_DIR } = require('./config');
 
 let browserInstance = null;
+
+/** 各平台系统 Chrome 常见路径 */
+const SYSTEM_CHROME_PATHS = {
+  darwin: [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  ],
+  win32: [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  ],
+  linux: ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'],
+};
+
+/**
+ * 解析可执行的 Chrome 路径：优先 Puppeteer 缓存，否则用本机已安装的 Chrome
+ */
+function resolveExecutablePath() {
+  try {
+    const bundled = puppeteer.executablePath();
+    if (bundled && fs.existsSync(bundled)) return bundled;
+  } catch {
+    /* 未安装 puppeteer 自带 Chrome */
+  }
+
+  const candidates = SYSTEM_CHROME_PATHS[process.platform] || [];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      console.log(`[浏览器] 使用系统 Chrome: ${p}`);
+      return p;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 统一启动配置（login / 批量截图共用）
+ */
+function getLaunchOptions(overrides = {}) {
+  const { forLogin, ...rest } = overrides;
+  const headless = rest.headless ?? false;
+  const options = {
+    headless: headless === true ? 'new' : headless,
+    defaultViewport: null,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--window-size=1920,1080',
+      '--lang=zh-CN,zh',
+      ...(rest.args || []),
+    ],
+    ignoreHTTPSErrors: true,
+    ...rest,
+  };
+
+  // 登录模式：独立配置目录 + 去掉自动化标记，地址栏可正常手动输入网址
+  if (forLogin) {
+    options.userDataDir = path.join(ROOT_DIR, '.chrome-login-profile');
+    options.ignoreDefaultArgs = ['--enable-automation'];
+  }
+
+  const executablePath = resolveExecutablePath();
+  if (executablePath) {
+    options.executablePath = executablePath;
+  } else {
+    console.warn(
+      '[浏览器] 未找到 Chrome。请执行: npm run install:chrome\n' +
+        '或安装 Google Chrome 后重试。'
+    );
+  }
+
+  return options;
+}
+
+/** 启动浏览器（独立脚本也可用） */
+async function launchBrowser(overrides = {}) {
+  return puppeteer.launch(getLaunchOptions(overrides));
+}
 
 /**
  * 启动或复用浏览器实例
@@ -15,18 +99,7 @@ async function getBrowser(headless = true) {
     return browserInstance;
   }
 
-  browserInstance = await puppeteer.launch({
-    headless: headless ? 'new' : false,
-    defaultViewport: null,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--window-size=1920,1080',
-      '--lang=zh-CN,zh',
-    ],
-    ignoreHTTPSErrors: true,
-  });
+  browserInstance = await launchBrowser({ headless });
 
   return browserInstance;
 }
@@ -100,6 +173,9 @@ function sanitizeFilename(name) {
 
 module.exports = {
   getBrowser,
+  launchBrowser,
+  getLaunchOptions,
+  resolveExecutablePath,
   closeBrowser,
   newPage,
   safeGoto,
