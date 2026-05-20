@@ -1,0 +1,21 @@
+{
+  "name": "enterprise-credit-screenshot",
+  "version": "1.0.0",
+  "description": "企业信用批量查询截图工具",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "login": "node server/login.js"
+  },
+  "keywords": [
+    "puppeteer",
+    "screenshot",
+    "enterprise-credit"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "puppeteer": "^24.2.0"
+  }
+}

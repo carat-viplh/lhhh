@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业信用批量查询截图工具</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <h1 class="logo">企业信用批量查询截图</h1>
+      <p class="subtitle">批量检索政府官网 · 条件截图 · 自动生成报告素材</p>
+    </div>
+  </header>
+
+  <main class="container main">
+    <!-- 运行设置 -->
+    <section class="card">
+      <h2 class="card-title">运行设置</h2>
+      <div class="form-grid">
+        <label class="field">
+          <span class="label-text">截图触发条件（可选）</span>
+          <input
+            type="text"
+            id="triggerText"
+            class="input"
+            placeholder="页面包含此文本才截图；留空则截首页"
+          />
+          <span class="hint">例如：统一社会信用代码、无违法违规记录、守信激励 等</span>
+        </label>
+        <label class="field">
+          <span class="label-text">页面加载等待（毫秒）</span>
+          <input type="number" id="waitMs" class="input" min="500" max="60000" step="500" value="3000" />
+        </label>
+        <label class="field checkbox-field">
+          <input type="checkbox" id="headless" checked />
+          <span>无头模式（关闭后可看到浏览器操作，便于调试）</span>
+        </label>
+      </div>
+    </section>
+
+    <div class="stack-sections">
+      <!-- 企业列表 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">企业名称</h2>
+          <button type="button" class="btn btn-sm btn-primary" id="addCompany">+ 添加</button>
+        </div>
+        <ul id="companyList" class="item-list"></ul>
+        <p class="empty-hint" id="companyEmpty">暂无企业，点击「添加」批量录入（每行一个企业名）</p>
+      </section>
+
+      <!-- 网站列表 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">查询网站</h2>
+          <button type="button" class="btn btn-sm btn-primary" id="addSite">+ 添加</button>
+        </div>
+        <ul id="siteList" class="item-list"></ul>
+        <p class="empty-hint" id="siteEmpty">暂无网站，点击「添加」录入</p>
+        <div class="pagination" id="sitePagination" hidden>
+          <div class="pagination-left">
+            <span class="pagination-info" id="sitePageInfo">共 0 条</span>
+            <label class="page-size-label">
+              每页
+              <select id="sitePageSize" class="page-size-select">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+              </select>
+              条
+            </label>
+          </div>
+          <div class="pagination-btns">
+            <button type="button" class="btn btn-sm btn-outline" id="sitePrev" disabled>上一页</button>
+            <span class="page-num" id="sitePageNum">1 / 1</span>
+            <button type="button" class="btn btn-sm btn-outline" id="siteNext" disabled>下一页</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 执行区 -->
+    <section class="card action-card">
+      <button type="button" class="btn btn-lg btn-execute" id="executeBtn">
+        开始批量查询截图
+      </button>
+      <p class="action-hint">多个企业将并行检索，每个企业都会在全部已配置网站中查询并截图</p>
+    </section>
+
+    <!-- 进度与结果 -->
+    <section class="card" id="progressSection" hidden>
+      <h2 class="card-title">执行进度</h2>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <p class="progress-text" id="progressText">准备中…</p>
+      <ul id="resultList" class="result-list"></ul>
+    </section>
+
+    <!-- 截图列表 -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">已保存截图</h2>
+        <button type="button" class="btn btn-sm btn-outline" id="refreshScreenshots">刷新</button>
+      </div>
+      <ul id="screenshotList" class="screenshot-grid"></ul>
+      <p class="empty-hint" id="screenshotEmpty">暂无截图，执行后将保存在 screenshots 目录</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>访问 <code>http://localhost:3888</code> · 首次请先 <code>npm run login</code> · 截图：企业名_网站名_时间戳.png</p>
+    </div>
+  </footer>
+
+  <!-- 企业弹窗 -->
+  <dialog id="companyDialog" class="dialog">
+    <form method="dialog" id="companyForm" class="dialog-form">
+      <h3 id="companyDialogTitle">添加企业</h3>
+      <input type="hidden" id="companyEditIndex" value="-1" />
+      <label class="field" id="fieldCompanyBatch">
+        <span class="label-text">企业名称（每行一个，可批量添加）</span>
+        <textarea
+          id="companyNamesInput"
+          class="input textarea"
+          rows="8"
+          placeholder="示例科技有限公司&#10;某某集团有限公司&#10;..."
+        ></textarea>
+      </label>
+      <label class="field" id="fieldCompanySingle" hidden>
+        <span class="label-text">企业名称</span>
+        <input type="text" id="companySingleInput" class="input" />
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-outline" id="companyDialogCancel">取消</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 网站弹窗 -->
+  <dialog id="siteDialog" class="dialog">
+    <form method="dialog" id="siteForm" class="dialog-form">
+      <h3 id="siteDialogTitle">添加网站</h3>
+      <input type="hidden" id="siteEditIndex" value="-1" />
+      <label class="field">
+        <span class="label-text">网站名称</span>
+        <input type="text" id="siteNameInput" class="input" required />
+      </label>
+      <label class="field">
+        <span class="label-text">网址</span>
+        <input type="url" id="siteUrlInput" class="input" placeholder="https://" required />
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-outline" id="siteDialogCancel">取消</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
